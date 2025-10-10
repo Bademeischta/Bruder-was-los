@@ -26,6 +26,9 @@ def main_loop(
         acceptance_threshold (float): Die Mindestgewinnrate, um ein neues Modell zu akzeptieren.
     """
 
+    # Stelle sicher, dass die Verzeichnisse für die Modelle existieren
+    os.makedirs("models/archive", exist_ok=True)
+
     # Initialisiere oder lade das beste Modell
     best_model_path = "models/best_model.pth"
     if os.path.exists(best_model_path):
