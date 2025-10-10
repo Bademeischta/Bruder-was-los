@@ -115,22 +115,35 @@ class Node:
             current_node = current_node.parent
 
 
+from move_translator import move_to_index
+
 def _get_policy_dict(policy_logits: torch.Tensor, board: chess.Board) -> dict[chess.Move, float]:
     """
-    Dekodiert die Policy-Logits vom neuronalen Netz in ein Dictionary.
-
-    HINWEIS: Dies ist eine vereinfachte Platzhalter-Implementierung. Sie ignoriert die
-    Logits und erzeugt eine gleichmäßige Wahrscheinlichkeitsverteilung über alle
-    legalen Züge. Eine vollständige Implementierung erfordert eine komplexe
-    Zuordnung zwischen den 4672 Logits und den möglichen Zügen.
+    Dekodiert die Policy-Logits vom neuronalen Netz in ein Dictionary, das
+    legale Züge auf ihre jeweiligen Wahrscheinlichkeiten abbildet.
     """
+    # 1. Wende Softmax an, um Logits in Wahrscheinlichkeiten umzuwandeln
+    probabilities = torch.softmax(policy_logits, dim=1).squeeze(0)
+
+    policy = {}
     legal_moves = list(board.legal_moves)
+
     if not legal_moves:
         return {}
 
-    # Placeholder: Uniforme Policy
-    prob = 1.0 / len(legal_moves)
-    return {move: prob for move in legal_moves}
+    for move in legal_moves:
+        # 2. Finde den Index für jeden legalen Zug
+        index = move_to_index(move, board)
+        # 3. Weise die entsprechende Wahrscheinlichkeit zu
+        policy[move] = probabilities[index].item()
+
+    # 4. Normalisiere die Wahrscheinlichkeiten der legalen Züge, damit sie zu 1 summieren
+    total_prob = sum(policy.values())
+    if total_prob > 0:
+        for move in policy:
+            policy[move] /= total_prob
+
+    return policy
 
 
 class MCTS:
