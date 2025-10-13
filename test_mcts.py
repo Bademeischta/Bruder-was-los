@@ -2,18 +2,21 @@ import unittest
 import chess
 import torch
 from mcts import Node, MCTS
-from neural_network import ChessModel
+from transformer_network import ChessTransformer
 
-class MockChessModel(ChessModel):
+class MockChessModel(ChessTransformer):
     """
     Eine Mock-Version des ChessModel für Testzwecke.
     Gibt eine vordefinierte, gleichmäßige Policy und einen festen Value zurück.
     """
-    def forward(self, x):
-        # Policy: 4672-dimensionaler Vektor, hier als Platzhalter
-        policy_logits = torch.randn(1, 4672)
+    def forward(self, token_ids, position_ids, src_key_padding_mask=None):
+        batch_size = token_ids.size(0)
+        num_pieces = token_ids.size(1) - 1 # Ignoriere [CLS]
+
+        # Lokale Policy: (Batch, NumPieces, 73)
+        policy_logits = torch.randn(batch_size, num_pieces, 73)
         # Value: Fester Wert von 0.5
-        value = torch.tensor([[0.5]])
+        value = torch.full((batch_size, 1), 0.5)
         return policy_logits, value
 
 class TestMCTS(unittest.TestCase):

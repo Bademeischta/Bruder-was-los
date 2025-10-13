@@ -1,5 +1,5 @@
 import torch
-from neural_network import ChessModel
+from transformer_network import ChessTransformer
 from self_play_parallel import run_parallel_games
 from train import train_model
 from evaluate import run_tournament
@@ -33,11 +33,11 @@ def main_loop(
     best_model_path = "models/best_model.pth"
     if os.path.exists(best_model_path):
         print("Lade bestes Modell...")
-        best_model = ChessModel()
+        best_model = ChessTransformer()
         best_model.load_state_dict(torch.load(best_model_path))
     else:
         print("Erstelle initiales Modell...")
-        best_model = ChessModel()
+        best_model = ChessTransformer()
         torch.save(best_model.state_dict(), best_model_path)
 
     for i in range(num_iterations):
@@ -49,7 +49,7 @@ def main_loop(
 
         # 2. Trainings-Phase
         print(f"\nTrainiere neues Modell mit {len(training_data)} Positionen...")
-        new_model = ChessModel()
+        new_model = ChessTransformer()
         new_model.load_state_dict(best_model.state_dict()) # Starte mit den Gewichten des besten Modells
         train_model(new_model, training_data, epochs=epochs_per_training)
 

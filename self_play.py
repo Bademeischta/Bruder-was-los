@@ -43,9 +43,9 @@ def play_game(model: ChessModel, num_simulations: int, exploration_moves: int = 
                 index = move_to_index(move, board)
                 policy_vector[index] = child.visit_count / total_visits
 
-        # Speichere den Zustand und die berechnete Policy
-        state_tensor = board_to_tensor(board)
-        game_data.append([state_tensor, policy_vector, 0.0]) # Outcome wird später gesetzt
+        # Speichere den tokenisierten Zustand und die berechnete Policy
+        token_ids, position_ids = tokenize_board(board)
+        game_data.append([token_ids, position_ids, policy_vector, 0.0]) # Outcome wird später gesetzt
 
         # Wähle den nächsten Zug aus
         if board.fullmove_number < exploration_moves:

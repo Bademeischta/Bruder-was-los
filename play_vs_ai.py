@@ -1,7 +1,7 @@
 import chess
 import torch
 import os
-from neural_network import ChessModel
+from transformer_network import ChessTransformer
 from mcts import MCTS
 
 def select_player_color():
@@ -41,7 +41,7 @@ def play_vs_ai(num_simulations: int = 400):
         return
 
     print("Lade KI-Modell...")
-    model = ChessModel()
+    model = ChessTransformer()
     model.load_state_dict(torch.load(model_path))
     model.eval()
 
