@@ -171,3 +171,27 @@ Um eine Selbstspiel-Partie live zu verfolgen, können Sie die `play_game`-Funkti
         print("\n" + str(board))
         print(f"Zug: {move.uci()}, Zugnummer: {board.fullmove_number}, Spieler am Zug: {'Weiß' if board.turn else 'Schwarz'}")
 ```
+
+---
+
+## Interaktive Nutzung
+
+### Schnelles Training auf Colab
+
+Der `main_loop.py` ist für ein langes, tiefgehendes Training konzipiert. Um in kurzer Zeit (ca. 10-15 Minuten auf einer Colab-GPU) ein spielbares Modell zu erhalten, verwenden Sie das optimierte Skript `train_fast.py`.
+
+```bash
+# Führt einen optimierten Trainingszyklus aus
+python train_fast.py
+```
+Dieser Prozess erzeugt eine `models/best_model.pth`-Datei, die Sie für das Spiel gegen die KI verwenden können.
+
+### Gegen die KI spielen
+
+Sobald ein trainiertes Modell (`best_model.pth`) vorhanden ist, können Sie mit dem Skript `play_vs_ai.py` eine interaktive Partie auf der Konsole spielen.
+
+```bash
+python play_vs_ai.py
+```
+
+Das Skript wird Sie auffordern, Ihre Farbe zu wählen (Weiß oder Schwarz) und Ihre Züge im UCI-Format (z.B. `e2e4`) einzugeben.
