@@ -195,3 +195,18 @@ python play_vs_ai.py
 ```
 
 Das Skript wird Sie auffordern, Ihre Farbe zu wählen (Weiß oder Schwarz) und Ihre Züge im UCI-Format (z.B. `e2e4`) einzugeben.
+
+### Training mit eigenen Partien (PGN)
+
+Sie können das neuronale Netz mit Ihren eigenen Partien oder einer Datenbank von Meisterpartien vor-trainieren. Dies ist eine extrem leistungsfähige Methode, um der KI von Anfang an ein solides positionelles und taktisches Verständnis zu vermitteln.
+
+1.  **Bereiten Sie Ihre PGN-Datei vor:** Sammeln Sie die Partien, die Sie verwenden möchten, in einer einzigen `.pgn`-Datei.
+2.  **Starten Sie das Training:** Verwenden Sie das Skript `train_on_pgn.py`, um das Training zu starten.
+
+**Beispiel:**
+```bash
+# Trainiere ein neues Modell mit den Partien aus 'my_games.pgn' für 20 Epochen
+python train_on_pgn.py my_games.pgn --epochs 20 --save_path models/my_pretrained_model.pth
+```
+
+Das Skript bietet mehrere Kommandozeilenargumente zur Steuerung des Trainingsprozesses. Führen Sie `python train_on_pgn.py --help` aus, um alle Optionen zu sehen.
