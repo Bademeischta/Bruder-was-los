@@ -104,3 +104,70 @@ You can run this project in a Google Colab notebook, which provides free access 
     # Start the main loop (make sure to use a GPU runtime in Colab)
     !python main_loop.py
     ```
+
+## Funktionsweise und erweiterte Nutzung
+
+### Funktioniert das Training wirklich?
+
+**Ja, der Code ist eine vollständige und funktionierende Implementierung des AlphaZero-Algorithmus.** Der selbstlernende Zyklus in `main_loop.py` ist voll funktionsfähig und orchestriert die Phasen korrekt:
+
+1.  **Selbstspiel:** Das System spielt Partien gegen sich selbst und generiert Trainingsdaten.
+2.  **Training:** Das `train.py`-Modul **trainiert das neuronale Netz auch wirklich.** Die Ausgabe mit dem sinkenden Loss (z.B. `Epoch 1/5, Loss: 7.8028` -> `Epoch 5/5, Loss: 5.2807`) ist der Beweis dafür. In jeder Epoche passt der Optimizer die Gewichte des `ChessModel` an, um die Differenz zwischen seinen Vorhersagen und den "besseren" Daten aus der MCTS-Suche zu minimieren. Das Modell lernt also tatsächlich aus seinen Erfahrungen.
+3.  **Evaluation:** Das System vergleicht das neu trainierte Modell mit dem bisher besten und ersetzt es bei signifikanter Verbesserung.
+
+Der entscheidende Punkt ist der **Maßstab**: Die Demonstrationsläufe werden mit extrem kleinen Parametern ausgeführt (wenige Simulationen, wenige Partien). Das beweist die *Funktionsfähigkeit der Architektur*, aber reicht nicht aus, um eine starke Schach-KI zu erschaffen. Sie haben eine voll funktionsfähige Maschine gebaut; jetzt braucht sie nur noch die Zeit und die Rechenleistung (den "Treibstoff"), um wirklich intelligent zu werden.
+
+### Hyperparameter für ein echtes Training
+
+Um ein ernsthaftes Training durchzuführen, müssen die Parameter in `main_loop.py` deutlich erhöht werden:
+
+*   `num_iterations`: Hunderte oder Tausende, um eine kontinuierliche Verbesserung zu ermöglichen.
+*   `num_games_per_iteration`: Eine große Zahl (z.B. 25.000, wie im AlphaZero-Paper), um eine vielfältige Datenbasis für jede Trainingsphase zu schaffen.
+*   `num_simulations_per_move`: Der wichtigste Parameter für die Spielstärke. Werte von 800, 1600 oder mehr sind hier üblich.
+*   `epochs_per_training`: Genügend Epochen, damit das Netz aus den neuen Daten lernen kann, ohne zu overfitten.
+
+### Analyse einer einzelnen Stellung
+
+Sie können ein trainiertes Modell verwenden, um die beste Aktion für eine beliebige Schachstellung zu finden. Erstellen Sie dafür ein Skript `analyze.py`:
+
+```python
+# analyze.py
+import chess
+import torch
+from neural_network import ChessModel
+from mcts import MCTS
+
+# 1. Laden Sie Ihr bestes trainiertes Modell
+model = ChessModel()
+model.load_state_dict(torch.load("models/best_model.pth"))
+
+# 2. Definieren Sie die Stellung mittels FEN-String
+fen = "r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3" # Beispiel: Sizilianische Verteidigung
+board = chess.Board(fen)
+
+# 3. Führen Sie die MCTS-Suche aus
+mcts = MCTS(model)
+num_simulations = 800  # Eine hohe Anzahl für eine gute Analyse
+best_move = mcts.find_best_move(board, num_simulations)
+
+print(f"Analyse für FEN: {fen}")
+print(f"Bester gefundener Zug nach {num_simulations} Simulationen: {best_move.uci()}")
+```
+
+### Visualisierung einer Partie
+
+Um eine Selbstspiel-Partie live zu verfolgen, können Sie die `play_game`-Funktion in `self_play.py` leicht anpassen. Fügen Sie einfach eine `print(board)`-Anweisung innerhalb der `while`-Schleife hinzu:
+
+```python
+# In self_play.py, innerhalb der play_game-Funktion:
+# ...
+    while not board.is_game_over():
+        # ... (MCTS-Suche)
+
+        # ... (Zugauswahl)
+        board.push(move)
+
+        # Fügen Sie diese Zeilen hinzu, um das Brett zu visualisieren
+        print("\n" + str(board))
+        print(f"Zug: {move.uci()}, Zugnummer: {board.fullmove_number}, Spieler am Zug: {'Weiß' if board.turn else 'Schwarz'}")
+```
