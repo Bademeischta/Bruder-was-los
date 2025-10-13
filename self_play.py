@@ -1,29 +1,31 @@
 import chess
 import numpy as np
 import torch
-from chess_core import ChessCore
-from neural_network import ChessModel
+from transformer_network import ChessTransformer
 from mcts import MCTS, Node
-from state_encoder import board_to_tensor
+from board_tokenizer import tokenize_board
 from move_translator import move_to_index
 
-def play_game(model: ChessModel, num_simulations: int, exploration_moves: int = 30, game_index: int = 0) -> list:
+def play_game(model, num_simulations, exploration_moves=30, game_index=0) -> list:
     """
     Spielt eine einzelne Partie von Anfang bis Ende gegen sich selbst und
     sammelt dabei Trainingsdaten.
 
     Args:
-        model (ChessModel): Das neuronale Netz, das die MCTS-Suche leitet.
+        model (ChessTransformer): Das neuronale Netz, das die MCTS-Suche leitet.
         num_simulations (int): Die Anzahl der MCTS-Simulationen pro Zug.
         exploration_moves (int): Die Anzahl der Züge am Anfang der Partie,
                                  bei denen der Zug probabilistisch ausgewählt wird.
-        game_index (int): Ein optionaler Index, um den Fortschritt zu verfolgen (nützlich für parallele Ausführung).
+        game_index (int): Ein optionaler Index, um den Fortschritt zu verfolgen.
 
     Returns:
         list: Eine Liste von Trainings-Tupeln:
-              [(state_tensor, policy_vector, outcome), ...].
-              Der 'outcome' wird erst am Ende der Partie eingetragen.
+              [(token_ids, position_ids, policy_vector, outcome), ...].
     """
+    # Eine kleine Ausgabe, um den Fortschritt in der Konsole zu sehen
+    if game_index % 10 == 0:
+        print(f"Starte Spiel {game_index}...")
+
     board = chess.Board()
     mcts = MCTS(model)
 
@@ -87,10 +89,10 @@ def play_game(model: ChessModel, num_simulations: int, exploration_moves: int = 
 if __name__ == '__main__':
     # Beispiel für die Generierung von Trainingsdaten aus einer Partie
     print("Starte Beispiel für Selbstspiel...")
-    model = ChessModel()
+    model = ChessTransformer()
 
     # Führe eine kurze Partie mit wenigen Simulationen aus
-    training_data = play_game(model, num_simulations=10, exploration_moves=10)
+    training_data = play_game(model, num_simulations=10, exploration_moves=10, game_index=0)
 
     print(f"Partie beendet. {len(training_data)} Trainingsdatensätze generiert.")
 

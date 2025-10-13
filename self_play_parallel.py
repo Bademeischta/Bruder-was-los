@@ -1,11 +1,11 @@
 import torch
 import torch.multiprocessing as mp
-from neural_network import ChessModel
+from transformer_network import ChessTransformer
 from self_play import play_game
 from functools import partial
 import os
 
-def run_parallel_games(model: ChessModel, num_games: int, num_simulations: int, num_processes: int = None) -> list:
+def run_parallel_games(model: ChessTransformer, num_games: int, num_simulations: int, num_processes: int = None) -> list:
     """
     Führt mehrere Selbstspiel-Partien parallel aus, um die Datengenerierung
     zu beschleunigen.
@@ -27,16 +27,14 @@ def run_parallel_games(model: ChessModel, num_games: int, num_simulations: int, 
     # zwischen den Prozessen, ohne dass jeder eine eigene Kopie lädt.
     model.share_memory()
 
-    # `partial` wird verwendet, um die `play_game`-Funktion mit festen
-    # Argumenten (model, num_simulations) zu versehen.
-    # Der Pool wird dann nur noch die variablen Teile (die Spielnummer) übergeben.
-    game_function = partial(play_game, model, num_simulations)
+    # Erstelle eine Liste von Argumenten-Tupeln für jede Partie
+    args_list = [(model, num_simulations, 30, i) for i in range(num_games)]
 
     print(f"Starte {num_games} Partien auf {num_processes} Kernen...")
 
     with mp.Pool(processes=num_processes) as pool:
-        # Führe die Funktion parallel aus
-        results = pool.map(game_function, range(num_games))
+        # Führe die Funktion parallel mit starmap aus
+        results = pool.starmap(play_game, args_list)
 
     # Sammle die Ergebnisse aus allen Prozessen
     all_training_data = []
@@ -44,11 +42,6 @@ def run_parallel_games(model: ChessModel, num_games: int, num_simulations: int, 
         all_training_data.extend(game_data)
 
     return all_training_data
-
-# Wrapper-Funktion, die von `pool.map` aufgerufen wird.
-# Sie benötigt ein dummy-Argument (hier 'game_index'), um mit `map` kompatibel zu sein.
-def play_game_wrapper(game_index, model, num_simulations):
-    return play_game(model, num_simulations)
 
 
 if __name__ == '__main__':
@@ -62,7 +55,7 @@ if __name__ == '__main__':
     except RuntimeError:
         pass
 
-    model = ChessModel()
+    model = ChessTransformer()
 
     # Führe 4 Partien parallel aus
     num_parallel_games = 4
