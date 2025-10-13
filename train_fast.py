@@ -1,6 +1,6 @@
 import torch
 import torch.multiprocessing as mp
-from neural_network import ChessModel
+from transformer_network import ChessTransformer
 from self_play_parallel import run_parallel_games
 from train import train_model
 from evaluate import run_tournament
@@ -28,17 +28,17 @@ def train_fast_on_colab():
     best_model_path = "models/best_model.pth"
     os.makedirs("models/archive", exist_ok=True)
     if os.path.exists(best_model_path):
-        best_model = ChessModel()
+        best_model = ChessTransformer()
         best_model.load_state_dict(torch.load(best_model_path))
     else:
-        best_model = ChessModel()
+        best_model = ChessTransformer()
 
     # 1. Paralleles Selbstspiel
     training_data = run_parallel_games(best_model, num_games=num_games, num_simulations=num_simulations)
 
     # 2. Training
     print(f"\nTrainiere neues Modell mit {len(training_data)} Positionen...")
-    new_model = ChessModel()
+    new_model = ChessTransformer()
     new_model.load_state_dict(best_model.state_dict())
     train_model(new_model, training_data, epochs=epochs)
 

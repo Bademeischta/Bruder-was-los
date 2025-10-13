@@ -2,8 +2,8 @@ import chess
 import math
 import numpy as np
 import torch
-from neural_network import ChessModel
-from state_encoder import board_to_tensor
+from transformer_network import ChessTransformer
+from board_tokenizer import tokenize_board
 
 class Node:
     """
@@ -115,15 +115,27 @@ class Node:
             current_node = current_node.parent
 
 
-from move_translator import move_to_index
+from move_translator import move_to_index, index_to_move
 
-def _get_policy_dict(policy_logits: torch.Tensor, board: chess.Board) -> dict[chess.Move, float]:
+def _get_policy_dict(local_policy_logits: torch.Tensor, board: chess.Board) -> dict[chess.Move, float]:
     """
-    Dekodiert die Policy-Logits vom neuronalen Netz in ein Dictionary, das
-    legale Züge auf ihre jeweiligen Wahrscheinlichkeiten abbildet.
+    Konvertiert die "lokalen" Policy-Logits des Transformers (pro Figur) in
+    einen vollständigen, normalisierten Policy-Vektor für alle legalen Züge.
     """
-    # 1. Wende Softmax an, um Logits in Wahrscheinlichkeiten umzuwandeln
-    probabilities = torch.softmax(policy_logits, dim=1).squeeze(0)
+    # Rekonstruiere den 4672-dimensionalen Vektor aus der lokalen Policy
+    full_policy_logits = torch.full((4672,), -float('inf'))
+
+    # Finde die Indizes der Figuren in der Sequenz
+    piece_indices_in_board = [i for i, p in enumerate(board.piece_map()) if p]
+
+    # local_policy_logits hat die Form (NumPieces, 73)
+    # Wir müssen die Logits den richtigen globalen Indizes zuordnen
+    for i, square_index in enumerate(piece_indices_in_board):
+        from_square_offset = square_index * 73
+        full_policy_logits[from_square_offset : from_square_offset + 73] = local_policy_logits[0, i, :]
+
+    # Wende Softmax auf den vollständigen Vektor an
+    probabilities = torch.softmax(full_policy_logits, dim=0)
 
     policy = {}
     legal_moves = list(board.legal_moves)
@@ -132,12 +144,10 @@ def _get_policy_dict(policy_logits: torch.Tensor, board: chess.Board) -> dict[ch
         return {}
 
     for move in legal_moves:
-        # 2. Finde den Index für jeden legalen Zug
         index = move_to_index(move, board)
-        # 3. Weise die entsprechende Wahrscheinlichkeit zu
         policy[move] = probabilities[index].item()
 
-    # 4. Normalisiere die Wahrscheinlichkeiten der legalen Züge, damit sie zu 1 summieren
+    # Normalisiere die Wahrscheinlichkeiten der legalen Züge
     total_prob = sum(policy.values())
     if total_prob > 0:
         for move in policy:
@@ -151,7 +161,7 @@ class MCTS:
     Implementiert den Monte-Carlo Tree Search Algorithmus, der von einem
     neuronalen Netz geleitet wird.
     """
-    def __init__(self, model: ChessModel, c_param: float = 1.41):
+    def __init__(self, model: ChessTransformer, c_param: float = 1.41):
         self.model = model
         self.c_param = c_param
         self.model.eval() # Modell in den Evaluationsmodus schalten
@@ -177,18 +187,19 @@ class MCTS:
                 # Wenn das Spiel vorbei ist, hat dieser Spieler verloren.
                 value = -1.0
         else:
-            # Konvertiere den Zustand in einen Tensor für das NN
-            state_tensor = board_to_tensor(current_node.state)
-            state_tensor = torch.from_numpy(state_tensor).unsqueeze(0)
+            # Tokenisiere den Zustand für den Transformer
+            token_ids, position_ids = tokenize_board(current_node.state)
+            token_ids = token_ids.unsqueeze(0)
+            position_ids = position_ids.unsqueeze(0)
 
-            # Erhalte Policy und Value vom NN
+            # Erhalte Policy und Value vom Transformer
             with torch.no_grad():
-                policy_logits, value_tensor = self.model(state_tensor)
+                local_policy_logits, value_tensor = self.model(token_ids, position_ids)
 
             value = value_tensor.item()
 
-            # Expandiere den Knoten mit der Policy vom NN
-            policy = _get_policy_dict(policy_logits, current_node.state)
+            # Expandiere den Knoten mit der Policy vom Transformer
+            policy = _get_policy_dict(local_policy_logits, current_node.state)
             current_node.expand(policy)
 
         # 3. Backpropagation

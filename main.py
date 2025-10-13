@@ -1,6 +1,6 @@
 import chess
 from chess_core import ChessCore
-from neural_network import ChessModel
+from transformer_network import ChessTransformer
 from mcts import MCTS
 
 def main():
@@ -16,7 +16,7 @@ def main():
 
     # 2. Lade das neuronale Netzwerk
     # In einem echten Szenario würden hier trainierte Gewichte geladen
-    model = ChessModel()
+    model = ChessTransformer()
 
     # 3. Initialisiere die MCTS-Suche
     mcts = MCTS(model)
