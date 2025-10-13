@@ -21,7 +21,7 @@ The project is divided into several modular components that work together to cre
 
 The AI's ability to improve comes from a continuous loop of three processes, orchestrated by `main_loop.py`:
 
-1.  **Self-Play (`self_play.py`)**: The current best neural network plays thousands of games against itself. For each move, an MCTS search is performed to find the best action. The history of these games (states, MCTS-derived policies, and final game outcomes) is stored as training data.
+1.  **Parallel Self-Play (`self_play_parallel.py`)**: To drastically speed up data generation, the system plays hundreds of games against itself in parallel, utilizing all available CPU cores. For each move, an MCTS search is performed to find the best action. The history of these games is stored as training data.
 2.  **Training (`train.py`)**: A new neural network is trained using the data generated during self-play. The network learns to predict two things:
     *   The move probabilities calculated by the MCTS (the "teacher").
     *   The actual game outcome (win/loss/draw).

@@ -1,6 +1,6 @@
 import torch
 from neural_network import ChessModel
-from self_play import play_game
+from self_play_parallel import run_parallel_games
 from train import train_model
 from evaluate import run_tournament
 import os
@@ -44,12 +44,8 @@ def main_loop(
         print(f"\n--- Starte Iteration {i+1}/{num_iterations} ---")
 
         # 1. Selbstspiel-Phase
-        print(f"Generiere {num_games_per_iteration} neue Partien...")
-        training_data = []
-        for g in range(num_games_per_iteration):
-            print(f"  Spiele Partie {g+1}/{num_games_per_iteration}...")
-            game_data = play_game(best_model, num_simulations_per_move)
-            training_data.extend(game_data)
+        print(f"Generiere {num_games_per_iteration} neue Partien parallel...")
+        training_data = run_parallel_games(best_model, num_games=num_games_per_iteration, num_simulations=num_simulations_per_move)
 
         # 2. Trainings-Phase
         print(f"\nTrainiere neues Modell mit {len(training_data)} Positionen...")

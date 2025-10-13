@@ -1,6 +1,10 @@
 import torch
+import torch.multiprocessing as mp
 from neural_network import ChessModel
-from main_loop import main_loop
+from self_play_parallel import run_parallel_games
+from train import train_model
+from evaluate import run_tournament
+import os
 import time
 
 def train_fast_on_colab():
@@ -15,16 +19,39 @@ def train_fast_on_colab():
     start_time = time.time()
 
     # Diese Hyperparameter sind ein Kompromiss zwischen Geschwindigkeit und Qualität.
-    # Sie sind so gewählt, dass ein Zyklus auf einer T4-GPU in Colab
-    # in einem vernünftigen Zeitrahmen abgeschlossen werden kann.
-    main_loop(
-        num_iterations=1,                # Nur eine vollständige Iteration
-        num_games_per_iteration=20,      # Mehr Partien für eine bessere Datenbasis
-        num_simulations_per_move=100,    # Eine moderate Anzahl an Simulationen für qualitativ gute Züge
-        num_eval_games=10,               # Genügend Evaluationspartien für ein aussagekräftiges Ergebnis
-        epochs_per_training=5,           # Genügend Epochen, um aus den neuen Daten zu lernen
-        acceptance_threshold=0.55
-    )
+    num_games = 20
+    num_simulations = 100
+    num_eval_games = 10
+    epochs = 5
+
+    # Lade oder erstelle das beste Modell
+    best_model_path = "models/best_model.pth"
+    os.makedirs("models/archive", exist_ok=True)
+    if os.path.exists(best_model_path):
+        best_model = ChessModel()
+        best_model.load_state_dict(torch.load(best_model_path))
+    else:
+        best_model = ChessModel()
+
+    # 1. Paralleles Selbstspiel
+    training_data = run_parallel_games(best_model, num_games=num_games, num_simulations=num_simulations)
+
+    # 2. Training
+    print(f"\nTrainiere neues Modell mit {len(training_data)} Positionen...")
+    new_model = ChessModel()
+    new_model.load_state_dict(best_model.state_dict())
+    train_model(new_model, training_data, epochs=epochs)
+
+    # 3. Evaluation
+    print(f"\nEvaluiere neues Modell gegen bestes Modell...")
+    win_rate = run_tournament(new_model, best_model, num_matches=num_eval_games, num_simulations=num_simulations)
+
+    print(f"\nErgebnis: Gewinnrate des neuen Modells: {win_rate*100:.1f}%")
+    if win_rate > 0.55:
+        print("Neues Modell wird als 'best_model.pth' gespeichert.")
+        torch.save(new_model.state_dict(), best_model_path)
+    else:
+        print("Bestes Modell wurde nicht ersetzt.")
 
     end_time = time.time()
     duration_minutes = (end_time - start_time) / 60

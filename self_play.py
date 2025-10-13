@@ -7,7 +7,7 @@ from mcts import MCTS, Node
 from state_encoder import board_to_tensor
 from move_translator import move_to_index
 
-def play_game(model: ChessModel, num_simulations: int, exploration_moves: int = 30) -> list:
+def play_game(model: ChessModel, num_simulations: int, exploration_moves: int = 30, game_index: int = 0) -> list:
     """
     Spielt eine einzelne Partie von Anfang bis Ende gegen sich selbst und
     sammelt dabei Trainingsdaten.
@@ -17,6 +17,7 @@ def play_game(model: ChessModel, num_simulations: int, exploration_moves: int = 
         num_simulations (int): Die Anzahl der MCTS-Simulationen pro Zug.
         exploration_moves (int): Die Anzahl der Züge am Anfang der Partie,
                                  bei denen der Zug probabilistisch ausgewählt wird.
+        game_index (int): Ein optionaler Index, um den Fortschritt zu verfolgen (nützlich für parallele Ausführung).
 
     Returns:
         list: Eine Liste von Trainings-Tupeln:
